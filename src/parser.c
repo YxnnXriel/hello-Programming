@@ -8,8 +8,8 @@ parser_T* init_parser(lexer_T* lexer)
 {
     parser_T* parser = calloc(1, sizeof(struct PARSER_STRUCT));
     parser->lexer = lexer;
+    parser->prev_token = NULL;
     parser->current_token = lexer_get_next_token(lexer);
-    parser->prev_token = parser->current_token;
 
     parser->scope = init_scope();
 
@@ -20,6 +20,7 @@ void parser_eat(parser_T* parser, int token_type)
 {
     if (parser->current_token->type == token_type)
     {
+        free_token(parser->prev_token);
         parser->prev_token = parser->current_token;
         parser->current_token = lexer_get_next_token(parser->lexer);
     }
@@ -101,9 +102,12 @@ AST_T* parser_parse_term(parser_T* parser, scope_T* scope)
 
 AST_T* parser_parse_function_call(parser_T* parser, scope_T* scope)
 {
+
     AST_T* function_call = init_ast(AST_FUNCTION_CALL);
 
-    function_call->function_call_name = parser->prev_token->value;
+
+    function_call->function_call_name = calloc(strlen(parser->prev_token->value)+1 , sizeof(char*));
+    strcpy(function_call->function_call_name,parser->prev_token->value); // cpy name of function call because I wanna free after this one
     parser_eat(parser, TOKEN_LPAREN); 
 
     function_call->function_call_arguments = calloc(1, sizeof(struct AST_STRUCT*));
@@ -218,7 +222,8 @@ AST_T* parser_parse_variable(parser_T* parser, scope_T* scope)
 AST_T* parser_parse_string(parser_T* parser, scope_T* scope)
 {
     AST_T* ast_string = init_ast(AST_STRING);
-    ast_string->string_value = parser->current_token->value;
+    ast_string->string_value = calloc(strlen(parser->current_token->value), sizeof(char*));
+    strcpy(ast_string->string_value,parser->current_token->value); // cpy value and continue !
 
     parser_eat(parser, TOKEN_STRING);
 
